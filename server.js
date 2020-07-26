@@ -38,6 +38,12 @@ app.get('/location', (request, response) => {
     response.send(locationData);
 });
 
+app.get('/weather', (request, response) => {
+    let weatherFile = require('./data/weather.json');
+    let locationWeather = weather(weatherFile);
+    response.send(locationWeather);
+});
+
 // end of another solution
 
 
@@ -53,6 +59,35 @@ function Location(city, locationFile) {
     this.formatted_query = locationFile[0].display_name;
     this.latitude = locationFile[0].lat;
     this.longitude = locationFile[0].lon;
-}
+};
 
+/*
+[
+  {
+    "forecast": "Partly cloudy until afternoon.",
+    "time": "Mon Jan 01 2001"
+  },
+  {
+    "forecast": "Mostly cloudy in the morning.",
+    "time": "Tue Jan 02 2001"
+  },
+  ...
+]
+*/
 
+function weather(weatherFile) {
+    let weatherArr = [];
+    function WeatherObject(forecast, time) {
+        this.forecast = forecast;
+        this.time = time;
+        weatherArr.push(this);
+    };
+    for (let i = 0; i < weatherFile.data.lenght; i++) {
+        // let forecast = weatherFile.data[i].weather.description;
+        // let time = weatherFile.data[i].valid_date;
+        // new WeatherObject(forecast, time);
+        new WeatherObject(weatherFile.data[i].weather.description, weatherFile.data[i].valid_date);
+        
+    };
+    return weatherArr;
+};
