@@ -12,30 +12,47 @@ app.get('/', (request, response) => {
     response.status(200).send('This is the HomePage');
 });
 
+// app.get('/location', render);
+
+// let locationFile = require('./data/location.json');
+// //const weatherFile = require('./data/weather.json');
+// function render(request, response) {
+//     let locationData = getLocation(request.query.city);
+//     response.status(200).json(locationData);
+
+// }
+// function getLocation(city) {
+//     let data = require('./data/location.json');
+//     return new Location(city, locationFile);
+// }
+
+// app.all('*', (request, response) => {
+//     response.status(404).send('Error 404 : page not found');
+// });
+
+//another solution
 app.get('/location', (request, response) => {
-    //console.log('location request');
-    //console.log(request.query.city);
-const locationFile = require('./data/location.json');
-const weatherFile = require('./data/weather.json');
-let city = request.query.city;
-let locationData = new Location(city, locationFile, weatherFile);
-response.send(locationData);
+    let locationFile = require('./data/location.json');
+    let city = request.query.city;
+    let locationData = new Location(city, locationFile);
+    response.send(locationData);
 });
 
+// end of another solution
 
 
-app.all('*', (request, response) => {
-    response.status(404).send('Error 404 : page not found');
-});
+
 // app.listen
 app.listen(PORT, () => {
     console.log('server is listening to the port: ', PORT);
 });
 
 // global functions
-function Location(city, locationFile, weatherFile){
+function Location(city, locationFile) {
     this.search_query = city;
     this.formatted_query = locationFile[0].display_name;
     this.latitude = locationFile[0].lat;
     this.longitude = locationFile[0].lon;
 }
+
+
