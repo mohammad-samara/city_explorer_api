@@ -35,13 +35,15 @@ app.get('/location', (request, response) => {
     let locationFile = require('./data/location.json');
     let city = request.query.city;
     let locationData = new Location(city, locationFile);
-    response.send(locationData);
+    response.status(200).send(locationData);
+    response.status(500).send(error500);
 });
 
 app.get('/weather', (request, response) => {
     let weatherFile = require('./data/weather.json');
     let locationWeather = weather(weatherFile);
-    response.send(locationWeather);
+    response.status(200).send(locationWeather);
+    response.status(500).send(error500);
 });
 
 // end of another solution
@@ -92,3 +94,8 @@ function weather(weatherFile) {
     //weatherArr.push(weatherFile.data.length);
     return weatherArr;
 };
+
+let error500 = {
+    status: 500,
+    responseText: "Sorry, something went wrong"
+  }
