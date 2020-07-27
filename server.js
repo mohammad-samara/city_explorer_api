@@ -56,6 +56,7 @@ function getData(city) {
     let url = `https://eu1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json`;
     return superagent.get(url).then(data => {
         let locationData = new Location(city, data.body);
+        console.log(data);
         return locationData;
     });
 }
