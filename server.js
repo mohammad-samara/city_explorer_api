@@ -5,6 +5,7 @@ const cors = require('cors');
 const { request } = require('http');
 const { response } = require('express');
 require('dotenv').config();
+const superagent = require('superagent');
 const PORT = process.env.PORT || 3000;
 app.use(cors());
 // routes
@@ -30,14 +31,38 @@ app.get('/', (request, response) => {
 //     response.status(404).send('Error 404 : page not found');
 // });
 
-//another solution
-app.get('/location', (request, response) => {
-    let locationFile = require('./data/location.json');
+//another solution for static location from json file
+// app.get('/location', (request, response) => {
+//     let locationFile = require('./data/location.json');
+//     let city = request.query.city;
+//     let locationData = new Location(city, locationFile);
+//     response.status(200).send(locationData);
+//     response.status(500).send(error500);
+// });
+
+// dynamic location from API
+app.get('/location', handleLocation);
+function handleLocation(request, response){
     let city = request.query.city;
-    let locationData = new Location(city, locationFile);
-    response.status(200).send(locationData);
-    response.status(500).send(error500);
-});
+ // let locationData = new Location(city, locationFile);
+    getData(city).then(returnedData => {
+        response.status(200).send(returnedData);
+    });
+    
+    //response.status(500).send(error500);
+}
+function getData(city) {
+    let GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
+    let url = `https://eu1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json`;
+    return superagent.get(url).then(data => {
+        let locationData = new Location(city, data.body);
+        return locationData;
+    });
+}
+    
+
+
+
 
 app.get('/weather', (request, response) => {
     let weatherFile = require('./data/weather.json');
