@@ -40,6 +40,8 @@ app.get('/', (request, response) => {
 //     response.status(500).send(error500);
 // });
 var city;
+var lat;
+var lon;
 // dynamic location from API
 app.get('/location', handleLocation);
 function handleLocation(request, response){
@@ -93,6 +95,26 @@ function getWeatherData(city) {
         return locationWeather;
     });
 }
+
+
+// /trail
+app.get('/trails', handleTrails);
+function handleTrails(request, response){
+
+    getTrailsData(city).then(returnedTrailsData => {
+        response.status(200).send(returnedTrailsData);
+    });
+}
+
+function getTrailsData(city) {
+    let TRAIL_API_KEY = process.env.TRAIL_API_KEY;
+    let url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=200&key=${TRAIL_API_KEY}`;
+    return superagent.get(url).then(CurrentTrailsData => {
+        console.log(CurrentTrailsData.body);
+        let locationTrails = CurrentTrailsData.body.trails.map(trails); 
+        return locationTrails;
+    });
+}
     
 // end of another solution
 
@@ -109,21 +131,11 @@ function Location(city, locationFile) {
     this.formatted_query = locationFile[0].display_name;
     this.latitude = locationFile[0].lat;
     this.longitude = locationFile[0].lon;
+    lat = locationFile[0].lat;
+    lon = locationFile[0].lon;
 };
 
-/*
-[
-  {
-    "forecast": "Partly cloudy until afternoon.",
-    "time": "Mon Jan 01 2001"
-  },
-  {
-    "forecast": "Mostly cloudy in the morning.",
-    "time": "Tue Jan 02 2001"
-  },
-  ...
-]
-*/
+
 
 function weather(weatherData) {
     //let weatherArr = [];
@@ -140,6 +152,50 @@ function weather(weatherData) {
         
    // };
     //weatherArr.push(weatherFile.data.length);
+    return newObj;
+};
+
+/*
+{
+    "name": "Rattlesnake Ledge",
+    "location": "Riverbend, Washington",
+    "length": "4.3",
+    "stars": "4.4",
+    "star_votes": "84",
+    "summary": "An extremely popular out-and-back hike to the viewpoint on Rattlesnake Ledge.",
+    "trail_url": "https://www.hikingproject.com/trail/7021679/rattlesnake-ledge",
+    "conditions": "Dry: The trail is clearly marked and well maintained.",
+    "condition_date": "2018-07-21",
+    "condition_time": "0:00:00 "
+  }
+*/
+function trails(trailData) {
+    //let weatherArr = [];
+    function TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date ,condition_time) {
+        this.name = name;
+        this.location = location;
+        this.length = length;
+        this.stars = stars;
+        this.star_votes = star_votes;
+        this.summary = summary;
+        this.trail_url = trail_url;
+        this.conditions = conditions;
+        this.condition_date = condition_date;
+        this.condition_time = condition_time;
+    };
+        let name = trailData.name;
+        let location = trailData.location;
+        let length = trailData.length;
+        let stars = trailData.stars;
+        let star_votes = trailData.star_votes;
+        let summary = trailData.summary;
+        let trail_url = trailData.url;
+        let conditions = trailData.conditionDetails;
+        let condition_date = trailData.conditionDate.split(" ")[0];
+        let condition_time = trailData.conditionDate.split(" ")[1];
+
+        let newObj = new TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date ,condition_time);
+
     return newObj;
 };
 
