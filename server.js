@@ -41,7 +41,7 @@ app.get('/location', (request, response) => {
 
 app.get('/weather', (request, response) => {
     let weatherFile = require('./data/weather.json');
-    let locationWeather = weather(weatherFile);
+    let locationWeather = weatherFile.data.map(weather)
     response.status(200).send(locationWeather);
     response.status(500).send(error500);
 });
@@ -77,22 +77,21 @@ function Location(city, locationFile) {
 ]
 */
 
-function weather(weatherFile) {
-    let weatherArr = [];
+function weather(weatherData) {
+    //let weatherArr = [];
     function WeatherObject(forecast, time) {
         this.forecast = forecast;
         this.time = time;
-        weatherArr.push(this);
+        //weatherArr.push(this);
     };
-    for (let i = 0; i < weatherFile.data.length; i++) {
-        let forecast = weatherFile.data[i].weather.description;
-        let time = weatherFile.data[i].valid_date;
-        new WeatherObject(forecast, time);
-        //new WeatherObject(weatherFile.data[i].weather.description, weatherFile.data[i].valid_date);
+    //for (let i = 0; i < weatherFile.data.length; i++) {
+        let forecast = weatherData.weather.description;
+        let time = weatherData.valid_date;
+        let newObj = new WeatherObject(forecast, time);
         
-    };
+   // };
     //weatherArr.push(weatherFile.data.length);
-    return weatherArr;
+    return newObj;
 };
 
 let error500 = {
