@@ -39,38 +39,61 @@ app.get('/', (request, response) => {
 //     response.status(200).send(locationData);
 //     response.status(500).send(error500);
 // });
-
+var city;
 // dynamic location from API
 app.get('/location', handleLocation);
 function handleLocation(request, response){
-    let city = request.query.city;
+    city = request.query.city;
  // let locationData = new Location(city, locationFile);
-    getData(city).then(returnedData => {
+ getLocationData(city).then(returnedData => {
         response.status(200).send(returnedData);
     });
     
     //response.status(500).send(error500);
 }
-function getData(city) {
+function getLocationData(city) {
     let GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
     let url = `https://eu1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json`;
     return superagent.get(url).then(data => {
         let locationData = new Location(city, data.body);
+        //console.log(data);
         return locationData;
     });
 }
+     
+// app.get('/weather', (request, response) => {
+//     let weatherFile = require('./data/weather.json');
+//     let locationWeather = weatherFile.data.map(weather);
+//     response.status(200).send(locationWeather);
+//     response.status(500).send(error500);
+// });
+// dynamic weather from API
+// app.get('/weather', handleWeather);
+// function handleWeather(request, response){
+
+//     getWeatherData(city).then(returnedWeatherData => {
+//         response.status(200).send(returnedWeatherData);
+//     });
+// }
+
+app.get('/weather', handleWeather);
+function handleWeather(request, response){
+
+    getWeatherData(city).then(returnedWeatherData => {
+        response.status(200).send(returnedWeatherData);
+    });
+}
+
+function getWeatherData(city) {
+    let WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+    let url = `https://api.weatherbit.io/v2.0/forecast/daily?city=${city}&days=8&key=${WEATHER_API_KEY}`;
+    return superagent.get(url).then(CurrentWeatherData => {
+        console.log(CurrentWeatherData.body);
+        let locationWeather = CurrentWeatherData.body.data.map(weather); 
+        return locationWeather;
+    });
+}
     
-
-
-
-
-app.get('/weather', (request, response) => {
-    let weatherFile = require('./data/weather.json');
-    let locationWeather = weatherFile.data.map(weather)
-    response.status(200).send(locationWeather);
-    response.status(500).send(error500);
-});
-
 // end of another solution
 
 
@@ -111,7 +134,8 @@ function weather(weatherData) {
     };
     //for (let i = 0; i < weatherFile.data.length; i++) {
         let forecast = weatherData.weather.description;
-        let time = weatherData.valid_date;
+        //let time = weatherData.valid_date;
+        let time = weatherData.ob_time;
         let newObj = new WeatherObject(forecast, time);
         
    // };
