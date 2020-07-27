@@ -82,12 +82,13 @@ function weather(weatherFile) {
         this.time = time;
         weatherArr.push(this);
     };
-    for (let i = 0; i < weatherFile.data.lenght; i++) {
-        // let forecast = weatherFile.data[i].weather.description;
-        // let time = weatherFile.data[i].valid_date;
-        // new WeatherObject(forecast, time);
-        new WeatherObject(weatherFile.data[i].weather.description, weatherFile.data[i].valid_date);
+    for (let i = 0; i < weatherFile.data.length; i++) {
+        let forecast = weatherFile.data[i].weather.description;
+        let time = weatherFile.data[i].valid_date;
+        new WeatherObject(forecast, time);
+        //new WeatherObject(weatherFile.data[i].weather.description, weatherFile.data[i].valid_date);
         
     };
+    //weatherArr.push(weatherFile.data.length);
     return weatherArr;
 };
