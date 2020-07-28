@@ -176,7 +176,7 @@ function weather(weatherData) {
     //for (let i = 0; i < weatherFile.data.length; i++) {
     let forecast = weatherData.weather.description;
     //let time = weatherData.valid_date;
-    let time = weatherData.ob_time;
+    let time = weatherData.valid_date;
     let newObj = new WeatherObject(forecast, time);
 
     // };
