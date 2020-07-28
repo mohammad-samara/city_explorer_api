@@ -5,6 +5,7 @@ const cors = require('cors');
 const { request } = require('http');
 const { response } = require('express');
 require('dotenv').config();
+const pg = require('pg');
 const superagent = require('superagent');
 const PORT = process.env.PORT || 3000;
 app.use(cors());
