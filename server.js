@@ -5,10 +5,12 @@ const cors = require('cors');
 const { request } = require('http');
 const { response } = require('express');
 require('dotenv').config();
-const pg = require('pg');
+const pg = require('pg');  // sql first step in intializing
 const superagent = require('superagent');
 const PORT = process.env.PORT || 3000;
 app.use(cors());
+// sql second step in intializing
+const client = new pg.Client(process.env.DATABASE_URL);
 // routes
 app.get('/', (request, response) => {
     response.status(200).send('This is the HomePage');
@@ -43,15 +45,17 @@ app.get('/', (request, response) => {
 var city;
 var lat;
 var lon;
+var formatted_query;
 // dynamic location from API
 app.get('/location', handleLocation);
-function handleLocation(request, response){
+function handleLocation(request, response) {
     city = request.query.city;
- // let locationData = new Location(city, locationFile);
- getLocationData(city).then(returnedData => {
+    // let locationData = new Location(city, locationFile);
+    getLocationData(city).then(returnedData => {
+        formatted_query = returnedData;
         response.status(200).send(returnedData);
     });
-    
+
     //response.status(500).send(error500);
 }
 function getLocationData(city) {
@@ -63,7 +67,29 @@ function getLocationData(city) {
         return locationData;
     });
 }
-     
+
+// get location from database
+app.get('/cashed', (request, response) => {
+    let SQL = 'SELECT * FROM locations';
+    client.query(SQL).then((result) => {
+        response.status(200).send(result.rows);
+    });
+});
+// cash(save) location data to the database
+app.get('/add', (request, response) => {
+    let search_query = city;
+    let formatted_query = formatted_query;  // if there is a request it will be request.query.<the rquest query name in the url>
+    let latitude = lat;
+    let longitude = lon;
+    let SQL = "INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1,$2,$3,$4)";
+    let values = [search_query, formatted_query, latitude, longitude];
+    client.query(SQL, values).then(() => {
+        response.status(200).send('new location is cashed');
+    });
+
+
+});
+
 // app.get('/weather', (request, response) => {
 //     let weatherFile = require('./data/weather.json');
 //     let locationWeather = weatherFile.data.map(weather);
@@ -80,7 +106,7 @@ function getLocationData(city) {
 // }
 
 app.get('/weather', handleWeather);
-function handleWeather(request, response){
+function handleWeather(request, response) {
 
     getWeatherData(city).then(returnedWeatherData => {
         response.status(200).send(returnedWeatherData);
@@ -92,7 +118,7 @@ function getWeatherData(city) {
     let url = `https://api.weatherbit.io/v2.0/forecast/daily?city=${city}&days=8&key=${WEATHER_API_KEY}`;
     return superagent.get(url).then(CurrentWeatherData => {
         console.log(CurrentWeatherData.body);
-        let locationWeather = CurrentWeatherData.body.data.map(weather); 
+        let locationWeather = CurrentWeatherData.body.data.map(weather);
         return locationWeather;
     });
 }
@@ -100,7 +126,7 @@ function getWeatherData(city) {
 
 // /trail
 app.get('/trails', handleTrails);
-function handleTrails(request, response){
+function handleTrails(request, response) {
 
     getTrailsData(city).then(returnedTrailsData => {
         response.status(200).send(returnedTrailsData);
@@ -112,19 +138,21 @@ function getTrailsData(city) {
     let url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=200&key=${TRAIL_API_KEY}`;
     return superagent.get(url).then(CurrentTrailsData => {
         console.log(CurrentTrailsData.body);
-        let locationTrails = CurrentTrailsData.body.trails.map(trails); 
+        let locationTrails = CurrentTrailsData.body.trails.map(trails);
         return locationTrails;
     });
 }
-    
+
 // end of another solution
 
 
-
-// app.listen
-app.listen(PORT, () => {
-    console.log('server is listening to the port: ', PORT);
+client.connect(() => {           // this is a promise and we need to start the server after it connects to the database
+    // app.listen
+    app.listen(PORT, () => {          // to Start the express server only after the database connection is established.
+        console.log('server is listening to the port: ', PORT);
+    });
 });
+
 
 // global functions
 function Location(city, locationFile) {
@@ -146,12 +174,12 @@ function weather(weatherData) {
         //weatherArr.push(this);
     };
     //for (let i = 0; i < weatherFile.data.length; i++) {
-        let forecast = weatherData.weather.description;
-        //let time = weatherData.valid_date;
-        let time = weatherData.ob_time;
-        let newObj = new WeatherObject(forecast, time);
-        
-   // };
+    let forecast = weatherData.weather.description;
+    //let time = weatherData.valid_date;
+    let time = weatherData.ob_time;
+    let newObj = new WeatherObject(forecast, time);
+
+    // };
     //weatherArr.push(weatherFile.data.length);
     return newObj;
 };
@@ -172,7 +200,7 @@ function weather(weatherData) {
 */
 function trails(trailData) {
     //let weatherArr = [];
-    function TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date ,condition_time) {
+    function TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date, condition_time) {
         this.name = name;
         this.location = location;
         this.length = length;
@@ -184,18 +212,18 @@ function trails(trailData) {
         this.condition_date = condition_date;
         this.condition_time = condition_time;
     };
-        let name = trailData.name;
-        let location = trailData.location;
-        let length = trailData.length;
-        let stars = trailData.stars;
-        let star_votes = trailData.star_votes;
-        let summary = trailData.summary;
-        let trail_url = trailData.url;
-        let conditions = trailData.conditionDetails;
-        let condition_date = trailData.conditionDate.split(" ")[0];
-        let condition_time = trailData.conditionDate.split(" ")[1];
+    let name = trailData.name;
+    let location = trailData.location;
+    let length = trailData.length;
+    let stars = trailData.stars;
+    let star_votes = trailData.star_votes;
+    let summary = trailData.summary;
+    let trail_url = trailData.url;
+    let conditions = trailData.conditionDetails;
+    let condition_date = trailData.conditionDate.split(" ")[0];
+    let condition_time = trailData.conditionDate.split(" ")[1];
 
-        let newObj = new TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date ,condition_time);
+    let newObj = new TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date, condition_time);
 
     return newObj;
 };
@@ -203,4 +231,4 @@ function trails(trailData) {
 let error500 = {
     status: 500,
     responseText: "Sorry, something went wrong"
-  }
+}
