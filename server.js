@@ -42,19 +42,60 @@ app.get('/', (request, response) => {
 //     response.status(200).send(locationData);
 //     response.status(500).send(error500);
 // });
-var city;
+var city = "nochoose";
 var lat;
 var lon;
-var formatted_query;
+var formatted_query_location;
 // dynamic location from API
 app.get('/location', handleLocation);
 function handleLocation(request, response) {
     city = request.query.city;
-    // let locationData = new Location(city, locationFile);
-    getLocationData(city).then(returnedData => {
-        formatted_query = returnedData;
-        response.status(200).send(returnedData);
-    });
+    //let SQL = 'SELECT * FROM locations';
+    let cashedLocation = `SELECT * FROM locations WHERE search_query = '${city}'`;
+    client.query(cashedLocation).then((result) => {
+        console.log(result.rows.length);
+        if(result.rows.length>0){
+        console.log("loaded from data base");
+        let modifiedResult = {
+            "search_query": `${result.rows[0].search_query}`,
+            "formatted_query": `${result.rows[0].formatted_query}`,
+            "latitude": `${result.rows[0].latitude}`,
+            "longitude": `${result.rows[0].longitude}`
+        }
+        response.status(200).send(modifiedResult);
+    }else{
+        getLocationData(city).then(returnedData => {
+            let search_query = city;
+            let formatted_query = formatted_query_location;  // if there is a request it will be request.query.<the rquest query name in the url>
+            let latitude = lat;
+            let longitude = lon;
+            let SQL = "INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1,$2,$3,$4)";
+            let values = [search_query, formatted_query, latitude, longitude];
+            client.query(SQL, values).then(() => {
+                response.status(200).send(returnedData);
+            });
+            //response.status(200).send(returnedData);
+
+        });
+    }
+    })/*.catch(() => {
+        getLocationData(city).then(returnedData => {
+            let search_query = city;
+            let formatted_query = formatted_query_location;  // if there is a request it will be request.query.<the rquest query name in the url>
+            let latitude = lat;
+            let longitude = lon;
+            let SQL = "INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1,$2,$3,$4)";
+            let values = [search_query, formatted_query, latitude, longitude];
+            client.query(SQL, values).then(() => {
+                response.status(200).send(returnedData);
+            });
+            //response.status(200).send(returnedData);
+
+        });
+    })*/
+
+
+
 
     //response.status(500).send(error500);
 }
@@ -72,13 +113,20 @@ function getLocationData(city) {
 app.get('/cashed', (request, response) => {
     let SQL = 'SELECT * FROM locations';
     client.query(SQL).then((result) => {
-        response.status(200).send(result.rows);
+        let modifiedResult = {
+            "search_query": `${result.rows[0].search_query}`,
+            "formatted_query": `${result.rows[0].formatted_query}`,
+            "latitude": `${result.rows[0].latitude}`,
+            "longitude": `${result.rows[0].longitude}`
+            
+        }
+        response.status(200).send(modifiedResult);
     });
 });
 // cash(save) location data to the database
 app.get('/add', (request, response) => {
     let search_query = city;
-    let formatted_query = formatted_query;  // if there is a request it will be request.query.<the rquest query name in the url>
+    let formatted_query = formatted_query_location;  // if there is a request it will be request.query.<the rquest query name in the url>
     let latitude = lat;
     let longitude = lon;
     let SQL = "INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1,$2,$3,$4)";
@@ -146,7 +194,7 @@ function getTrailsData(city) {
 // end of another solution
 
 
-client.connect(() => {           // this is a promise and we need to start the server after it connects to the database
+client.connect().then(() => {           // this is a promise and we need to start the server after it connects to the database
     // app.listen
     app.listen(PORT, () => {          // to Start the express server only after the database connection is established.
         console.log('server is listening to the port: ', PORT);
@@ -162,6 +210,7 @@ function Location(city, locationFile) {
     this.longitude = locationFile[0].lon;
     lat = locationFile[0].lat;
     lon = locationFile[0].lon;
+    formatted_query_location = locationFile[0].display_name;
 };
 
 
