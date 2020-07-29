@@ -42,9 +42,9 @@ app.get('/', (request, response) => {
 //     response.status(200).send(locationData);
 //     response.status(500).send(error500);
 // });
-//var city = "nochoose";
-// var lat;
-// var lon;
+var city = "nochoose";
+var lat;
+var lon;
 var formatted_query_location;
 // dynamic location from API
 app.get('/location', handleLocation);
@@ -208,13 +208,46 @@ function getMoviesData(city) {
     
    let MOVIE_API_KEY = process.env.MOVIE_API_KEY;
     let url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIE_API_KEY}&query=${city}&language=en-US`;
-  //let url = `https://api.themoviedb.org/3/search/movie?api_key=c36f7b529d2cb07da42145a2571897fc&query=seattle&language=en-US`
     return superagent.get(url).then(CurrentMoviesData => {
         console.log(CurrentMoviesData.body.results[0].title);
         let locationMovies = CurrentMoviesData.body.results.map(movies);
         return locationMovies;
     });
 }
+
+// /yelp -- restaurants
+app.get('/yelp', handleYelp);
+function handleYelp(request, response) {
+    let queryCity = request.query.search_query;
+    getYelpData(request).then(returnedYelpData => {
+        response.status(200).send(returnedYelpData);
+    });
+}
+
+function getYelpData(request) {
+    let lat = request.query.latitude;
+    let lon = request.query.longitude;
+   let MOVIE_API_KEY = process.env.YELP_API_KEY;
+    let url = `https://api.yelp.com/v3/businesses/search?latitude=${lat}&longitude=${lon}`;
+    return superagent.get(url).set({ "Authorization": `Bearer ${MOVIE_API_KEY}`}).then(CurrentYelpData => {
+        //console.log(CurrentYelpData.body.results[0].title);
+        let locationYelp = CurrentYelpData.body.businesses.map(yelp);
+        return locationYelp;
+    });
+}
+
+
+// test yelp response output in separate route // this route only for testing yelp data
+app.get('/testyelp', (request, response) => {
+    //let queryCity = request.query.search_query;
+    let queryCity = "seatlle";
+    let MOVIE_API_KEY = process.env.YELP_API_KEY;
+    let url = `https://api.yelp.com/v3/businesses/search?latitude=47.6038321&longitude=-122.3300624`;
+    superagent.get(url).set({ "Authorization": `Bearer ${MOVIE_API_KEY}`}).then(CurrentYelpData => {
+       // console.log(CurrentYelpData.body);
+       response.status(200).send(CurrentYelpData.body);
+    });
+    });
 
 // end of another solution
 
@@ -322,6 +355,26 @@ function movies(moviesData) {
     let released_on = moviesData.release_date;
 
     let newObj = new MovieObject(title, overview, average_votes, total_votes, image_url, popularity, released_on);
+
+    return newObj;
+};
+// edit for yelp
+function yelp(yelpData) {
+    //let weatherArr = [];
+    function MovieObject(name, image_url, price, rating, url) {
+        this.name = name;
+        this.image_url = image_url;
+        this.price = price;
+        this.rating = rating;
+        this.url = url;
+    };
+    let name = yelpData.name;
+    let image_url = yelpData.image_url;
+    let price = yelpData.price;
+    let rating = yelpData.rating;
+    let url = yelpData.url;
+
+    let newObj = new MovieObject(name, image_url, price, rating, url);
 
     return newObj;
 };
