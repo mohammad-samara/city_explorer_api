@@ -49,11 +49,11 @@ var formatted_query_location;
 // dynamic location from API
 app.get('/location', handleLocation);
 function handleLocation(request, response) {
-    city = request.query.city;
+   let city = request.query.city;
     //let SQL = 'SELECT * FROM locations';
     let cashedLocation = `SELECT * FROM locations WHERE search_query = '${city}'`;
     client.query(cashedLocation).then((result) => {
-        console.log(result.rows.length);
+        //console.log(result.rows.length);
         if(result.rows.length>0){
         console.log("loaded from data base");
         let modifiedResult = {
@@ -125,10 +125,10 @@ app.get('/cashed', (request, response) => {
 });
 // cash(save) location data to the database
 app.get('/add', (request, response) => {
-    let search_query = city;
+    let search_query =request.query.search_query;
     let formatted_query = formatted_query_location;  // if there is a request it will be request.query.<the rquest query name in the url>
-    let latitude = lat;
-    let longitude = lon;
+    let latitude = request.query.latitude;
+    let longitude = request.query.longitude;
     let SQL = "INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1,$2,$3,$4)";
     let values = [search_query, formatted_query, latitude, longitude];
     client.query(SQL, values).then(() => {
@@ -155,17 +155,19 @@ app.get('/add', (request, response) => {
 
 app.get('/weather', handleWeather);
 function handleWeather(request, response) {
-
+let city = request.query.search_query;
+console.log(`city in weather1111 is ${city}`);
     getWeatherData(city).then(returnedWeatherData => {
         response.status(200).send(returnedWeatherData);
     });
 }
 
 function getWeatherData(city) {
+    console.log(`city in weather is ${city}`);
     let WEATHER_API_KEY = process.env.WEATHER_API_KEY;
     let url = `https://api.weatherbit.io/v2.0/forecast/daily?city=${city}&days=8&key=${WEATHER_API_KEY}`;
     return superagent.get(url).then(CurrentWeatherData => {
-        console.log(CurrentWeatherData.body);
+        //console.log(CurrentWeatherData.body);
         let locationWeather = CurrentWeatherData.body.data.map(weather);
         return locationWeather;
     });
@@ -176,20 +178,76 @@ function getWeatherData(city) {
 app.get('/trails', handleTrails);
 function handleTrails(request, response) {
 
-    getTrailsData(city).then(returnedTrailsData => {
+    getTrailsData(request).then(returnedTrailsData => {
         response.status(200).send(returnedTrailsData);
     });
 }
 
-function getTrailsData(city) {
+function getTrailsData(request) {
+    let lat = request.query.latitude;
+    let lon = request.query.longitude;
     let TRAIL_API_KEY = process.env.TRAIL_API_KEY;
     let url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=200&key=${TRAIL_API_KEY}`;
     return superagent.get(url).then(CurrentTrailsData => {
-        console.log(CurrentTrailsData.body);
+       // console.log(CurrentTrailsData.body);
         let locationTrails = CurrentTrailsData.body.trails.map(trails);
         return locationTrails;
     });
 }
+
+// /movies
+app.get('/movies', handleMovies);
+function handleMovies(request, response) {
+    let queryCity = request.query.search_query;
+    getMoviesData(queryCity).then(returnedMoviesData => {
+        response.status(200).send(returnedMoviesData);
+    });
+}
+
+function getMoviesData(city) {
+    
+   let MOVIE_API_KEY = process.env.MOVIE_API_KEY;
+    let url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIE_API_KEY}&query=${city}&language=en-US`;
+    return superagent.get(url).then(CurrentMoviesData => {
+        console.log(CurrentMoviesData.body.results[0].title);
+        let locationMovies = CurrentMoviesData.body.results.map(movies);
+        return locationMovies;
+    });
+}
+
+// /yelp -- restaurants
+app.get('/yelp', handleYelp);
+function handleYelp(request, response) {
+    let queryCity = request.query.search_query;
+    getYelpData(request).then(returnedYelpData => {
+        response.status(200).send(returnedYelpData);
+    });
+}
+
+function getYelpData(request) {
+    let lat = request.query.latitude;
+    let lon = request.query.longitude;
+   let MOVIE_API_KEY = process.env.YELP_API_KEY;
+    let url = `https://api.yelp.com/v3/businesses/search?latitude=${lat}&longitude=${lon}`;
+    return superagent.get(url).set({ "Authorization": `Bearer ${MOVIE_API_KEY}`}).then(CurrentYelpData => {
+        //console.log(CurrentYelpData.body.results[0].title);
+        let locationYelp = CurrentYelpData.body.businesses.map(yelp);
+        return locationYelp;
+    });
+}
+
+
+// test yelp response output in separate route // this route only for testing yelp data
+app.get('/testyelp', (request, response) => {
+    //let queryCity = request.query.search_query;
+    let queryCity = "seatlle";
+    let MOVIE_API_KEY = process.env.YELP_API_KEY;
+    let url = `https://api.yelp.com/v3/businesses/search?latitude=47.6038321&longitude=-122.3300624`;
+    superagent.get(url).set({ "Authorization": `Bearer ${MOVIE_API_KEY}`}).then(CurrentYelpData => {
+       // console.log(CurrentYelpData.body);
+       response.status(200).send(CurrentYelpData.body);
+    });
+    });
 
 // end of another solution
 
@@ -273,6 +331,50 @@ function trails(trailData) {
     let condition_time = trailData.conditionDate.split(" ")[1];
 
     let newObj = new TrailObject(name, location, length, stars, star_votes, summary, trail_url, conditions, condition_date, condition_time);
+
+    return newObj;
+};
+
+function movies(moviesData) {
+    //let weatherArr = [];
+    function MovieObject(title, overview, average_votes, total_votes, image_url, popularity, released_on) {
+        this.title = title;
+        this.overview = overview;
+        this.average_votes = average_votes;
+        this.total_votes = total_votes;
+        this.image_url = image_url;
+        this.popularity = popularity;
+        this.released_on = released_on;
+    };
+    let title = moviesData.title;
+    let overview = moviesData.overview;
+    let average_votes = moviesData.vote_average;
+    let total_votes = moviesData.vote_count;
+    let image_url = `https://image.tmdb.org/t/p/w500${moviesData.poster_path}`;
+    let popularity = moviesData.popularity;
+    let released_on = moviesData.release_date;
+
+    let newObj = new MovieObject(title, overview, average_votes, total_votes, image_url, popularity, released_on);
+
+    return newObj;
+};
+// edit for yelp
+function yelp(yelpData) {
+    //let weatherArr = [];
+    function MovieObject(name, image_url, price, rating, url) {
+        this.name = name;
+        this.image_url = image_url;
+        this.price = price;
+        this.rating = rating;
+        this.url = url;
+    };
+    let name = yelpData.name;
+    let image_url = yelpData.image_url;
+    let price = yelpData.price;
+    let rating = yelpData.rating;
+    let url = yelpData.url;
+
+    let newObj = new MovieObject(name, image_url, price, rating, url);
 
     return newObj;
 };
