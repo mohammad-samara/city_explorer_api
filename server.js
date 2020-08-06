@@ -225,11 +225,22 @@ function handleYelp(request, response) {
 }
 
 function getYelpData(request) {
-    let lat = request.query.latitude;
-    let lon = request.query.longitude;
+     let lat = request.query.latitude;
+     let lon = request.query.longitude;
+     let page = request.query.page;
+     let limit = 5;
+     let offset = (page - 1) * 5;
+    let queryParams= {
+        "latitude" : request.query.latitude,
+        "longitude" : request.query.longitude,
+        "limit" : 5,
+        "offset" : offset
+    };
    let MOVIE_API_KEY = process.env.YELP_API_KEY;
-    let url = `https://api.yelp.com/v3/businesses/search?latitude=${lat}&longitude=${lon}`;
-    return superagent.get(url).set({ "Authorization": `Bearer ${MOVIE_API_KEY}`}).then(CurrentYelpData => {
+   console.log(queryParams);
+     //let url = `https://api.yelp.com/v3/businesses/search?latitude=${lat}&longitude=${lon}&limit=${limit}&offset=${offset}`;
+    let url = `https://api.yelp.com/v3/businesses/search`;
+    return superagent.get(url).query(queryParams).set({ "Authorization": `Bearer ${MOVIE_API_KEY}`}).then(CurrentYelpData => {
         //console.log(CurrentYelpData.body.results[0].title);
         let locationYelp = CurrentYelpData.body.businesses.map(yelp);
         return locationYelp;
